@@ -1,0 +1,26 @@
+    if (ICR1 != previous_edge) {
+      current_edge = ICR1;
+
+      if (previous_edge > current_edge) {
+        d_cnt += current_edge + (USHRT_MAX - previous_edge);
+      } else {
+        d_cnt += current_edge - previous_edge;
+      }
+
+      d_cnt += (unsigned int)overflow_cnt * USHRT_MAX;
+      printf("Overflowed %i times.\n", overflow_cnt);
+
+      d_time = (float)(d_cnt) / F_CPU;
+
+      previous_edge = current_edge;
+      overflow_cnt = 0;
+      d_cnt = 0;
+
+      printf("Delta time (ms): %.4f\n", d_time * 1000);
+    }
+
+    if (TCNT1 < previous_edge && !overflowed) {
+      overflowed = 1;
+      overflow_cnt++;
+    } else
+      overflowed = 0;
