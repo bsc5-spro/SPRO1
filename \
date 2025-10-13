@@ -6,12 +6,12 @@
  */
 
 #include <avr/io.h>
-// #include <limits.h>
+#include <limits.h>
 #include <stdio.h>
 #include <util/delay.h>
 
+#include "../include/opto.h"
 #include "usart.h"
-#include <opto.h>
 
 int main(void) {
   uart_init();   // open the communication to the microcontroller
@@ -35,15 +35,10 @@ int main(void) {
    *
    */
 
-  opto_init();
-
-  unsigned long dtime;
+  printf("%d", hello());
 
   while (1) {
-    dtime = get_delta_ticks();
-    if (dtime != 0)
-      printf("Time elapsed: %d\n", dtime);
-
+    return 0;
   }
 
   return 0;
