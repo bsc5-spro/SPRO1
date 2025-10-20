@@ -53,6 +53,13 @@ unsigned long get_delta_ticks(void)
   return 0;
 }
 
+float get_delta_time(void){
+  if (ICR1 != previous_edge){
+    return (float)(get_delta_ticks()-1)/16;
+  }
+  return 0;
+}
+
 unsigned long overflow_ticks(char delta) { 
   unsigned long cnt;
   if (delta < 0 && abs(delta) > overflow_count)
