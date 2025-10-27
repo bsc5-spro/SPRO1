@@ -17,8 +17,6 @@ int main(void) {
   uart_init();   // open the communication to the microcontroller
   io_redirect(); // redirect input and output to the communication
 
-  TCCR1A = 0x00; // pure ticks counter
-  TCCR1B = 0xC5;
 
   DDRB &= ~0x01; // all pins act as input
   PORTB |= 0x01; // all pins in pull-down mode
@@ -37,13 +35,13 @@ int main(void) {
 
   opto_init();
 
-  unsigned long dtime;
+  float dtime;
 
   while (1) {
-    dtime = get_delta_ticks();
+    dtime = get_delta_time();
     if (dtime != 0)
-      printf("Time elapsed: %d\n", dtime);
-
+      printf("Time elapsed: %.2f\n", dtime);
+    
   }
 
   return 0;
