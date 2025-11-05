@@ -9,9 +9,10 @@
 // #include <limits.h>
 #include <stdio.h>
 #include <util/delay.h>
+#include <usart.h>
 
-#include "usart.h"
 #include <opto.h>
+#include <nextion.h>
 
 int main(void) {
   uart_init();   // open the communication to the microcontroller
