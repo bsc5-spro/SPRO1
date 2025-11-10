@@ -34,7 +34,6 @@ static uint16_t total_distance = 0; // in mm, max ~65m
 
 static unsigned char recording;
 
-static uint16_t get_current_velocity(void);
 static void add_to_moving_average(uint16_t new_val);
 
 void opto_init(void) {
@@ -98,15 +97,17 @@ uint16_t get_current_velocity(void) {
 uint16_t get_average_velocity(void) { return (uint16_t)(vel_sum / vel_count); }
 
 void add_to_moving_average(uint16_t new_val) {
+  // if the velocity array is full, remove the oldest value from the sum
   if (vel_count == VEL_WINDOW_SIZE) {
     vel_sum -= velocities[vel_index];
   } else {
     vel_count++;
   }
 
+  // replace odest value with new value
   velocities[vel_index] = new_val;
   vel_sum += new_val;
 
-  vel_index = (vel_index + 1) % VEL_WINDOW_SIZE; // make sure that vel_index is
-                                                 // less than VEL_WINDOW_SIZE
+  // make sure that vel_index is less than VEL_WINDOW_SIZE
+  vel_index = (vel_index + 1) % VEL_WINDOW_SIZE;
 }

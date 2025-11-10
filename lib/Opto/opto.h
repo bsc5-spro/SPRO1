@@ -13,7 +13,10 @@ unsigned char toggle_recording(void);
 void zero_distance(void);
 uint16_t get_distance_travelled(void);
 
-uint16_t get_average_velocity(void);
+uint16_t get_current_velocity(void); // may be noisy, inaccurate
+
+// TODO: make average window dynamically sized if needed
+uint16_t get_average_velocity(void); // more accurate measure of velocity
 
 void monitor_encoder(void);
 
