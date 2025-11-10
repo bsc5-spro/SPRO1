@@ -16,7 +16,7 @@
 // theta = 20
 // r = 20mm (radius of wheel)
 #define DELTA_S_MM 0.00174532925
-#define VEL_WINDOW_SIZE 20
+#define MAX_VEL_WIN_SIZE 20
 #define MIN_VALID_TICKS 100
 #define TIMING_CONSTANT 15625UL
 
@@ -28,7 +28,7 @@ static uint16_t previous_tick;
 static uint8_t vel_index = 0;
 static uint8_t vel_count;
 static uint16_t vel_sum = 0;
-static uint16_t velocities[VEL_WINDOW_SIZE]; // array of measured velocities
+static uint16_t velocities[MAX_VEL_WIN_SIZE]; // array of measured velocities
 
 static uint16_t total_distance = 0; // in mm, max ~65m
 
@@ -98,7 +98,7 @@ uint16_t get_average_velocity(void) { return (uint16_t)(vel_sum / vel_count); }
 
 void add_to_moving_average(uint16_t new_val) {
   // if the velocity array is full, remove the oldest value from the sum
-  if (vel_count == VEL_WINDOW_SIZE) {
+  if (vel_count == MAX_VEL_WIN_SIZE) {
     vel_sum -= velocities[vel_index];
   } else {
     vel_count++;
@@ -108,6 +108,6 @@ void add_to_moving_average(uint16_t new_val) {
   velocities[vel_index] = new_val;
   vel_sum += new_val;
 
-  // make sure that vel_index is less than VEL_WINDOW_SIZE
-  vel_index = (vel_index + 1) % VEL_WINDOW_SIZE;
+  // make sure that vel_index is less than MAX_VEL_WIN_SIZE
+  vel_index = (vel_index + 1) % MAX_VEL_WIN_SIZE;
 }
