@@ -5,33 +5,37 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define DELTA_S                                                                \
-  0.00174532925 // arc distance between two gaps in [m]eters
-                // ds = theta*(pi/180)*r
-                // theta = 20
-                // r = 5mm
-
+// arc distance between two gaps in [m]illi[m]eters
+// assuming no slippage, the distance a point on the wheel travels equals the
+// distance the car travels forwards
+//
+// The gear ratio is irrelevant as the optocoupler and encoder wheel are on the
+// same shaft, meaning that they have the same angular velocity.
+//
+// ds = theta*(pi/180)*r
+// theta = 20
+// r = 20mm (radius of wheel)
+#define DELTA_S_MM 0.00174532925
 #define VEL_WINDOW_SIZE 20
+#define MIN_VALID_TICKS 100
+#define TIMING_CONSTANT 15625UL
 
 static uint16_t previous_edge, current_edge; //, overflow_count;
-static unsigned long delta_tick;
-static unsigned long block_count; // number of obstructions detected
+static uint16_t delta_tick;
 
 static uint16_t previous_tick;
 
-static int vel_index = 0;
-static int vel_count;
-static float vel_sum = 0;
-static float velocities[VEL_WINDOW_SIZE]; // array of measured velocities
+static uint8_t vel_index = 0;
+static uint8_t vel_count;
+static uint16_t vel_sum = 0;
+static uint16_t velocities[VEL_WINDOW_SIZE]; // array of measured velocities
 
-static float delta_s;
+static uint16_t total_distance = 0; // in mm, max ~65m
 
-static char recording;
+static unsigned char recording;
 
-static char monitor;
-
-static float get_current_velocity(void);
-static void add_to_moving_average(float new_val);
+static uint16_t get_current_velocity(void);
+static void add_to_moving_average(uint16_t new_val);
 
 void opto_init(void) {
   TCCR1A = 0x00; // pure ticks counter
@@ -46,63 +50,54 @@ void opto_init(void) {
   vel_index = 0;
   vel_count = 0;
   zero_distance();
-
-  monitor_encoder();
 }
 
 void monitor_encoder(void) {
   if (recording) {
-    float vel = get_current_velocity();
+    uint16_t vel = get_current_velocity();
     add_to_moving_average(vel);
   }
 }
 
-unsigned long get_delta_ticks(void) {
+uint16_t get_delta_ticks(void) {
 
   if (ICR1 != previous_edge) { // There has been a new
     // obstruction
     current_edge = ICR1;
-    block_count++;
-
     delta_tick = current_edge - previous_edge;
 
-    previous_edge = current_edge;
-
-    return delta_tick;
+    if (delta_tick > MIN_VALID_TICKS) {
+      previous_edge = current_edge;
+      // block_count++;
+      total_distance += DELTA_S_MM;
+      return delta_tick;
+    }
   }
   return 0;
 }
 
-float get_delta_time(void) { // in ms
-  if (ICR1 != previous_edge) {
-    return (float)(get_delta_ticks() - 1) / 16;
-  }
-  return 0;
-}
+void zero_distance() { total_distance = 0; }
 
-void zero_distance() { block_count = 0; }
-
-float get_distance_travelled(void) { return (float)block_count * DELTA_S; }
+// mm; max ~65m; *10^4
+uint16_t get_distance_travelled(void) { return total_distance; }
 
 unsigned char toggle_recording(void) {
-  recording = (recording + 1) % 2;
+  recording = !recording;
   return recording;
 }
 
-float get_current_velocity(void) {
-  unsigned char count = 0;
-  float t = 0;
-  do {
-    count++;
-    t = get_delta_time();
-  } while (t == 0 || count < 5); // so there won't be any division with zero
-  t = t / 1000;       // convert ms to s
-  return DELTA_S / t; // therefore output is m/s
+uint16_t get_current_velocity(void) {
+  uint16_t ticks = get_delta_ticks();
+
+  if (!ticks || ticks < MIN_VALID_TICKS)
+    return 0;
+
+  return (uint16_t)((DELTA_S_MM * TIMING_CONSTANT) / ticks);
 }
 
-float get_average_velocity(int n) { return vel_sum / vel_count; }
+uint16_t get_average_velocity(void) { return (uint16_t)(vel_sum / vel_count); }
 
-void add_to_moving_average(float new_val) {
+void add_to_moving_average(uint16_t new_val) {
   if (vel_count == VEL_WINDOW_SIZE) {
     vel_sum -= velocities[vel_index];
   } else {
@@ -112,5 +107,6 @@ void add_to_moving_average(float new_val) {
   velocities[vel_index] = new_val;
   vel_sum += new_val;
 
-  vel_index = (vel_index + 1) % VEL_WINDOW_SIZE;
+  vel_index = (vel_index + 1) % VEL_WINDOW_SIZE; // make sure that vel_index is
+                                                 // less than VEL_WINDOW_SIZE
 }
