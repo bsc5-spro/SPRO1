@@ -1,8 +1,5 @@
+#include <avr/io.h> // used for pins input/output
 #include <stdint.h>
-#define F_CPU 16000000UL // needs to be defined for the delay function to work.
-
-#include "usart.h"      // for uart output to pc. Debugging purposes
-#include <avr/io.h>     // used for pins input/output
 #include <stdio.h>      // used for printf functions
 #include <util/delay.h> // here the delay fuctions are found
 
@@ -17,12 +14,18 @@
 
 // volatile uint8_t _duty0 = 0, _duty1 = 0, _duty2 = 0, _timer_tick;
 
-uint8_t speed_to_duty(uint8_t speed);
+/**
+ * @brief Sets the PWM output at PB1 to a specific duty cycle
+ * @param[in] duty Duty cycle in percent [0-100]
+ **/
+void pwm1_set_duty(unsigned char);
+
+uint8_t speed_to_duty(float speed);
 
 // Code from Alin
 void pwm1_init(void) {
-  cli();
-  DDRB |= 0x60;
+  // cli();
+  DDRD |= 0x60;
   // Set Fast PWM mode, non-inverted output on Timer 1
   TCCR0A = (1 << WGM10) | (1 << COM1A1); // Fast PWM, 8-bit
   TCCR0B = (1 << CS11); // Prescaler: 8 > Frequency approx. 4 kHz
@@ -36,7 +39,7 @@ void pwm1_set_duty(unsigned char input) {
 
 // Motor control functions
 
-void motor_forward(uint8_t speed) {
+void motor_forward(float speed) {
   // PORTD = (1 << MOTOR_IN1); // IN1 = HIGH
   // PORTD = (1 << MOTOR_IN2); // IN2 = LOW
   // motor_setSpeed(speed);
@@ -50,7 +53,7 @@ void motor_stop(void) {
   pwm1_set_duty(0);
 }
 
-uint8_t speed_to_duty(uint8_t speed) {
+uint8_t speed_to_duty(float speed) {
   return (float)(speed - MIN_SPEED) / (MAX_SPEED - MIN_SPEED) *
          100; // from dec to percentage
 }
