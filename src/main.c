@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <util/delay.h>
 
+#include <motor.h>
+
 #include "usart.h"
 
 int main(void) {
