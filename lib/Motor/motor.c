@@ -1,3 +1,4 @@
+#include <stdint.h>
 #define F_CPU 16000000UL // needs to be defined for the delay function to work.
 
 #include "usart.h"      // for uart output to pc. Debugging purposes
@@ -7,40 +8,54 @@
 
 #include "motor.h" // library for the fuctions we are using
 
+#define MAX_SPEED 1
+#define MIN_SPEED 0.1
+
 // Declare global valuables etc. like pwm valuables
 
 // Declare function prototypes here
 
-volatile uint8_t _duty0 = 0, _duty1 = 0, _duty2 = 0, _timer_tick;
+// volatile uint8_t _duty0 = 0, _duty1 = 0, _duty2 = 0, _timer_tick;
 
+uint8_t speed_to_duty(uint8_t speed);
+
+// Code from Alin
 void pwm1_init(void) {
   cli();
-  DDRB |= (1 << PB1);
+  DDRB |= 0x60;
   // Set Fast PWM mode, non-inverted output on Timer 1
-  TCCR1A = (1 << WGM10) | (1 << COM1A1); // Fast PWM, 8-bit
-  TCCR1B = (1 << CS11); // Prescaler: 8 > Frequency approx. 4 kHz
+  TCCR0A = (1 << WGM10) | (1 << COM1A1); // Fast PWM, 8-bit
+  TCCR0B = (1 << CS11); // Prescaler: 8 > Frequency approx. 4 kHz
 }
 
 void pwm1_set_duty(unsigned char input) {
   if (input <= 100) {
-    OCR1A = input * 2.55; // 0 .. 255 range
+    OCR0A = input * 2.55; // 0 .. 255 range
   }
 }
 
 // Motor control functions
 
 void motor_forward(uint8_t speed) {
-  PORTD = (1 << MOTOR_IN1); // IN1 = HIGH
-  PORTD = (1 << MOTOR_IN2); // IN2 = LOW
-  motor_setSpeed(speed);
+  // PORTD = (1 << MOTOR_IN1); // IN1 = HIGH
+  // PORTD = (1 << MOTOR_IN2); // IN2 = LOW
+  // motor_setSpeed(speed);
+  pwm1_set_duty(speed_to_duty(speed));
 }
 
 void motor_stop(void) {
-  PORTD = (1 << MOTOR_IN1);
-  PORTD = (1 << MOTOR_IN2);
-  OCR1A = 0; // Speed = 0
+  // PORTD = (1 << MOTOR_IN1);
+  // PORTD = (1 << MOTOR_IN2);
+  // OCR1A = 0; // Speed = 0
+  pwm1_set_duty(0);
 }
 
+uint8_t speed_to_duty(uint8_t speed) {
+  return (float)(speed - MIN_SPEED) / (MAX_SPEED - MIN_SPEED) *
+         100; // from dec to percentage
+}
+
+/*
 int main(void) {
   uart_init();   // open the communication to the microcontroller
   io_redirect(); // redirect input and output to the communication
@@ -83,3 +98,4 @@ int main(void) {
 }
 
 // Put the function implements here
+*/
