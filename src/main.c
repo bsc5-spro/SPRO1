@@ -25,10 +25,12 @@ int main(void) {
   printf("\nmotor speed set to 0.2");
   printf("\nOCR0A=%x", OCR0A);
 
-  motor_forward(0.2);
+  unsigned char input;
 
-  printf("\nOCR0A=%x", OCR0A);
   while (1) {
+    scanf("%hhi", &input);
+    pwm1_set_duty(input);
+    printf("\nOCR0A=%x", OCR0A);
   }
 
   return 0;
