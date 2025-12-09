@@ -17,7 +17,6 @@ int main(void) {
   uart_init();   // open the communication to the microcontroller
   io_redirect(); // redirect input and output to the communication
 
-
   DDRB &= ~0x01; // all pins act as input
   PORTB |= 0x01; // all pins in pull-down mode
 
@@ -41,7 +40,6 @@ int main(void) {
     dtime = get_delta_time();
     if (dtime != 0)
       printf("Time elapsed: %.2f\n", dtime);
-    
   }
 
   return 0;
