@@ -11,7 +11,9 @@ uint16_t get_delta_ticks(void);
 unsigned char toggle_recording(void);
 
 void zero_distance(void);
-uint16_t get_distance_travelled(void);
+void zero_time(void);
+uint16_t get_distance_travelled(void); // in mm
+uint16_t get_total_time(void);
 
 uint16_t get_current_velocity(void); // may be noisy, inaccurate
 

@@ -20,7 +20,7 @@
 #define MIN_VALID_TICKS 100
 #define TIMING_CONSTANT 15625UL
 
-static uint16_t previous_edge, current_edge; //, overflow_count;
+static uint16_t previous_edge, current_edge, overflow_count;
 static uint16_t delta_tick;
 
 static uint16_t previous_tick;
@@ -31,6 +31,8 @@ static uint16_t vel_sum = 0;
 static uint16_t velocities[MAX_VEL_WIN_SIZE]; // array of measured velocities
 
 static uint16_t total_distance = 0; // in mm, max ~65m
+static uint16_t total_hundred_ticks = 0;
+static uint16_t total_time = 0;
 
 static unsigned char recording;
 
@@ -53,6 +55,11 @@ void opto_init(void) {
 
 void monitor_encoder(void) {
   if (recording) {
+    uint16_t temp = TCNT1;
+    uint16_t dt = temp - previous_tick;
+    previous_tick = temp;
+
+    // somehow calcualte the time passed and add it to the running total
     uint16_t vel = get_current_velocity();
     add_to_moving_average(vel);
   }
@@ -77,8 +84,15 @@ uint16_t get_delta_ticks(void) {
 
 void zero_distance() { total_distance = 0; }
 
+void zero_time() {
+  total_time = 0;
+  total_hundred_ticks = 0;
+}
+
 // mm; max ~65m; *10^4
 uint16_t get_distance_travelled(void) { return total_distance; }
+
+uint16_t get_total_time(void) {}
 
 unsigned char toggle_recording(void) {
   recording = !recording;

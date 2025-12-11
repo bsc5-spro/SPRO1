@@ -7,11 +7,18 @@
 
 #include <avr/io.h>
 // #include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <util/delay.h>
 
 #include "usart.h"
+#include <motor.h>
 #include <opto.h>
+
+static uint16_t targetDistance; // in mm
+static uint16_t targetTime;
+
+void reset_run(void);
 
 int main(void) {
   uart_init();   // open the communication to the microcontroller
@@ -32,15 +39,24 @@ int main(void) {
    *
    */
 
+  // SETUP //
+
   opto_init();
+  reset_run();
 
-  float dtime;
+  // CONTROL //
 
-  while (1) {
-    dtime = get_delta_time();
-    if (dtime != 0)
-      printf("Time elapsed: %.2f\n", dtime);
+  while (get_distance_travelled() < targetDistance) {
   }
 
+  // END RUN //
   return 0;
+}
+
+void reset_run(void) {
+  targetDistance = 4000;
+  targetTime = 3000;
+
+  zero_distance();
+  zero_time();
 }
