@@ -15,7 +15,6 @@ uint32_t readValue;
 int read_value(void);
 
 void init_display(void){
-    char readBuffer[100];
 	printf("page 0%c%c%c",255,255,255);//init at 9600 baud.
 	_delay_ms(20);
 	readValue = 0;
@@ -67,7 +66,7 @@ int read_value(void){
         case 0x33:
             typeExpected = SET;
             readBuffer[0] = 0x33;
-            break
+            break;
         case 0x1A:
             scanf("%c", &readBuffer[i]);
             scanf("%c", &readBuffer[i]);
@@ -158,23 +157,23 @@ fixed read_numpad(void){
         int multiplier=1.0;
         int count = 0;
         number.i_number = 0;
-        for (int i = index -1; i >=0, i--){
+        for (int i = index -1; i >=0; i--){
             if (numberBuffer[i]==-1){
                 number.decimalPlace = count;
             } else{
-                number += (float)numberBuffer[i]*multiplier;
-                multiplier*=10
+                number.i_number += (float)numberBuffer[i]*multiplier;
+                multiplier*=10;
                 count++;
             }
         }
-        set_value("inpnum", number.i_number)
+        set_value("inpnum", number.i_number);
         set_property("inpnum", "vvs1", number.decimalPlace);
     }
 
-    if (decimalPlace == 0)
+    if (number.decimalPlace == 0)
         number.f_number = (float)number.i_number;
     else
         number.f_number = (float)number.i_number/pow(10, number.decimalPlace);
 
-    return number
+    return number;
 }
