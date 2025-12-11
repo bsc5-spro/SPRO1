@@ -10,9 +10,11 @@
 #include <stdio.h>
 #include <util/delay.h>
 #include <usart.h>
-
 #include <opto.h>
 #include <nextion.h>
+
+float distance;
+float time;
 
 int main(void) {
   uart_init();   // open the communication to the microcontroller
@@ -20,9 +22,26 @@ int main(void) {
 
   init_display();
 
-  uint32_t x = get_value("x0");
-
-  set_value("n0", x);
+  char runSelected = 0;
+  while (!runSelected){
+    int action = read_value();
+    switch (action)
+    {
+    case 1:
+      distance = read_numpad();
+      break;
+    case 2:
+      time = read_numpad();
+      break;
+    case 0;
+      // run;
+      runSelected = 1;
+      break;
+    
+    default:
+      break;
+    }
+  }
 
   return 0;
 }
