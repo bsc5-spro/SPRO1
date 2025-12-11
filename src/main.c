@@ -21,23 +21,11 @@ static uint16_t targetTime;
 void reset_run(void);
 
 int main(void) {
-  uart_init();   // open the communication to the microcontroller
-  io_redirect(); // redirect input and output to the communication
+  uart_init(); // open the communication to the microcontroller
+  // io_redirect(); // redirect input and output to the communication
 
   DDRB &= ~0x01; // all pins act as input
   PORTB |= 0x01; // all pins in pull-down mode
-
-  /* PROCESS
-   *
-   * ICR1: holds the time of last rising edge (start of obstruction)
-   * TCNT1: continuous count up to 2^16
-   *
-   * 1. See if ICR1 is updated
-   * 2. see the difference between it and previous rising edge
-   *  a. if the current rising edge was before the previous, overflow happened
-   *  b. if overflow,
-   *
-   */
 
   // SETUP //
 
