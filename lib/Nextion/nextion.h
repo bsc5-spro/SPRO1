@@ -13,6 +13,8 @@ void init_display(void);
 void set_value(char component[], int val);
 void set_property(char component[], char property[], int val);
 
+void set_page(int index);
+
 int get_value(char component[]);
 int read_value(void);
 
