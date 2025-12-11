@@ -6,14 +6,14 @@
  */
 
 #include <avr/io.h>
-// #include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <util/delay.h>
 
-#include "usart.h"
 #include <motor.h>
+#include <nextion.h>
 #include <opto.h>
+#include <usart.h>
 
 static uint16_t targetDistance; // in mm
 static uint16_t targetTime;
@@ -40,14 +40,14 @@ int main(void) {
     switch (action) {
     case 1: {
       fixed number = read_numpad();
-      distance = number.f_number;
+      targetDistance = (uint16_t)(number.f_number * 10);
       set_value("distance", number.i_number);
       set_property("distance", "vvs1", number.decimalPlace);
       break;
     }
     case 2: {
       fixed number = read_numpad();
-      time = number.f_number;
+      targetTime = (uint16_t)(number.f_number * 100);
       set_value("time", number.i_number);
       set_property("time", "vvs1", number.decimalPlace);
       break;
