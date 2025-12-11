@@ -32,6 +32,36 @@ int main(void) {
   opto_init();
   reset_run();
 
+  init_display();
+
+  char runSelected = 0;
+  while (!runSelected) {
+    int action = read_value();
+    switch (action) {
+    case 1: {
+      fixed number = read_numpad();
+      distance = number.f_number;
+      set_value("distance", number.i_number);
+      set_property("distance", "vvs1", number.decimalPlace);
+      break;
+    }
+    case 2: {
+      fixed number = read_numpad();
+      time = number.f_number;
+      set_value("time", number.i_number);
+      set_property("time", "vvs1", number.decimalPlace);
+      break;
+    }
+    case 0:
+      // run;
+      runSelected = 1;
+      break;
+
+    default:
+      break;
+    }
+  }
+
   // CONTROL //
 
   while (get_distance_travelled() < targetDistance) {
