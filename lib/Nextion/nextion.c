@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <util/delay.h>
 
 #define NUMBER_STRING 1001
@@ -125,14 +126,16 @@ int read_value(void){
 
 }	
 
-float read_numpad(void){
+fixed read_numpad(void){
+    fixed number;
     int numberBuffer[20];
     int index = 0;
-    int decimalPlace = 0; // place of decimal point from the right
+    number.decimalPlace = 0; // place of decimal point from the right
     char decimalSet = 0;
     char receivingNumbers = 1;
-    float number;
+
     while (receivingNumbers){
+
         int action = read_value();
         switch (action)
         {
@@ -154,18 +157,24 @@ float read_numpad(void){
 
         int multiplier=1.0;
         int count = 0;
-        number = 0;
+        number.i_number = 0;
         for (int i = index -1; i >=0, i--){
             if (numberBuffer[i]==-1){
-                decimalPlace = count;
+                number.decimalPlace = count;
             } else{
                 number += (float)numberBuffer[i]*multiplier;
                 multiplier*=10
                 count++;
             }
         }
-        set_value("inpnum", (int)number)
-        set_property("inpnum", "vvs1", decimalPlace);
+        set_value("inpnum", number.i_number)
+        set_property("inpnum", "vvs1", number.decimalPlace);
     }
-    return number/(10*decimalPlace);
+
+    if (decimalPlace == 0)
+        number.f_number = (float)number.i_number;
+    else
+        number.f_number = (float)number.i_number/pow(10, number.decimalPlace);
+
+    return number
 }

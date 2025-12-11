@@ -28,10 +28,16 @@ int main(void) {
     switch (action)
     {
     case 1:
-      distance = read_numpad();
+      fixed number = read_numpad();
+      distance = number.f_number;
+      set_value("distance", number.i_number)
+      set_property("distance", "vvs1", number.decimalPlace);
       break;
     case 2:
-      time = read_numpad();
+      fixed number = read_numpad();
+      time = number.f_number;
+      set_value("time", number.i_number)
+      set_property("time", "vvs1", number.decimalPlace);
       break;
     case 0;
       // run;
