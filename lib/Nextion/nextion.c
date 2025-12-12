@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <usart.h>
 #include <util/delay.h>
 
 #define NUMBER_STRING 1001
@@ -15,6 +16,8 @@ uint32_t readValue;
 int read_value(void);
 
 void init_display(void) {
+  uart_init(); // open the communication to the microcontroller
+  // io_redirect(); // redirect input and output to the communication
   set_page(0);
   readValue = 0;
 }
