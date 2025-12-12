@@ -177,3 +177,8 @@ fixed read_numpad(void) {
 
   return number;
 }
+
+void update_run_screen(uint16_t distance, uint16_t time, uint16_t velocity) {
+  // update the each component on the screen
+  // (in proper units)
+}

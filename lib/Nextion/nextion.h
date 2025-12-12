@@ -1,6 +1,7 @@
 #ifndef NEXTION
 #define NEXTION
 
+#include <stdint.h>
 typedef struct {
   int i_number;
   int decimalPlace;
@@ -19,5 +20,7 @@ int get_value(char component[]);
 int read_value(void);
 
 fixed read_numpad(void);
+
+void update_run_screen(uint16_t distance, uint16_t time, uint16_t velocity);
 
 #endif
