@@ -2,13 +2,26 @@
 
 #define OPTO
 
+#include <stdint.h>
 void opto_init(void);
-unsigned long get_delta_ticks(void); // return time between two obstructions in ms
-float get_delta_time(void);
 
-// TODO: only for debug
-// unsigned long overflow_ticks(char delta);
+// return the number of ticks between two obstructions.
+uint16_t get_delta_ticks(void);
 
-// unsigned int get_n_average(int n);
+unsigned char toggle_recording(void);
+unsigned char start_recording(void);
+unsigned char stop_recording(void);
+
+void zero_distance(void);
+void zero_time(void);
+uint16_t get_distance_travelled(void); // in mm
+uint16_t get_total_time(void);
+
+uint16_t get_current_velocity(void); // may be noisy, inaccurate
+
+// TODO: make average window dynamically sized if needed
+uint16_t get_average_velocity(void); // more accurate measure of velocity
+
+void monitor_encoder(void);
 
 #endif

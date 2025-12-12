@@ -28,7 +28,7 @@ void pwm1_init(void) {
   DDRD |= 0x60;
   // Set Fast PWM mode, non-inverted output on Timer 1
   TCCR0A = (1 << WGM10) | (1 << COM1A1); // Fast PWM, 8-bit
-  TCCR0B = (1 << CS11); // Prescaler: 8 > Frequency approx. 4 kHz
+  TCCR0B = (0 << CS11) | (1 << CS10) | (1 << CS12); // Prescaler: 8 > Frequency approx. 4 kHz
 }
 
 void pwm1_set_duty(unsigned char input) {

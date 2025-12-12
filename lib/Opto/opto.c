@@ -1,98 +1,147 @@
 #include "opto.h"
 #include <avr/io.h>
+#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 
-#define TIME_LENGTH sizeof(uint16_t)
+// arc distance between two gaps in [m]illi[m]eters
+// assuming no slippage, the distance a point on the wheel travels equals the
+// distance the car travels forwards
+//
+// The gear ratio is irrelevant as the optocoupler and encoder wheel are on the
+// same shaft, meaning that they have the same angular velocity.
+//
+// ds = theta*(pi/180)*r
+// theta = 18
+// r = 31.3mm (radius of wheel)
+#define DELTA_S_MM 9.833185
+#define MAX_VEL_WIN_SIZE 10
+#define MIN_VALID_TICKS 100
+#define TIMING_CONSTANT 15625UL
 
-static uint16_t previous_edge, current_edge;//, overflow_count;
-static unsigned long delta_tick;
+static uint16_t previous_edge, current_edge, overflow_count;
+static uint16_t delta_tick;
 
 static uint16_t previous_tick;
-// static unsigned char overflowed;
 
-// char check_overflow(void);
-// unsigned long overflow_ticks(char);
+static uint8_t vel_index = 0;
+static uint8_t vel_count;
+static uint16_t vel_sum = 0;
+static uint16_t velocities[MAX_VEL_WIN_SIZE]; // array of measured velocities
 
-void opto_init(void)
-{
+static uint16_t total_distance = 0; // in mm, max ~65m
+static uint16_t total_hundred_ticks = 0;
+static uint16_t total_time = 0;
+
+static unsigned char recording;
+
+static void add_to_moving_average(uint16_t new_val);
+
+void opto_init(void) {
   TCCR1A = 0x00; // pure ticks counter
   TCCR1B = 0xC5;
 
   previous_edge = ICR1;
   previous_tick = TCNT1;
-  // overflow_count = 0;
-  // overflowed = 0;
+
   delta_tick = 0;
+
+  recording = 0;
+  vel_index = 0;
+  vel_count = 0;
+  zero_distance();
 }
 
-unsigned long get_delta_ticks(void)
-{
-  // check_overflow();
+static char vel_invalid = 0;
+void monitor_encoder(void) {
+  if (recording) {
+    uint16_t temp = TCNT1;
+    uint16_t dt = previous_tick - temp;
+    previous_tick = temp;
 
-  if (ICR1 != previous_edge)
-  { // There has been a new
+    if (dt >= 625) {
+      total_time += 4;
+    }
+
+    uint16_t vel = get_current_velocity();
+    if (vel == 0 && !vel_invalid) { // only add 0 velocity if previous was not
+                                    // zero
+      vel_invalid = 1;
+    } else {
+      add_to_moving_average(vel);
+      vel_invalid = 0;
+    }
+  }
+}
+
+uint16_t get_delta_ticks(void) {
+
+  if (ICR1 != previous_edge) { // There has been a new
     // obstruction
     current_edge = ICR1;
+    delta_tick = current_edge - previous_edge;
 
-    // if (current_edge > previous_edge)
-    // {
-    //   delta_tick = (unsigned long)(current_edge - previous_edge + overflow_ticks(0));
-    // }
-    // else
-    // {
-    //   delta_tick =
-    //       (unsigned long)(current_edge + (pow(2, 16) - previous_edge) + overflow_ticks(-1));
-    // }
-
-    delta_tick = current_edge-previous_edge;
-
-    // overflow_count = 0;
-    previous_edge = current_edge;
-
-    // return delta_tick / (F_CPU / 1000);
-    return delta_tick;
+    if (delta_tick > MIN_VALID_TICKS) {
+      previous_edge = current_edge;
+      // block_count++;
+      return delta_tick;
+    }
   }
   return 0;
 }
 
-float get_delta_time(void){
-  if (ICR1 != previous_edge){
-    return (float)(get_delta_ticks()-1)/16;
-  }
-  return 0;
+void zero_distance() { total_distance = 0; }
+
+void zero_time() {
+  total_time = 0;
+  total_hundred_ticks = 0;
 }
 
-// unsigned long overflow_ticks(char delta) { 
-//   unsigned long cnt;
-//   if (delta < 0 && abs(delta) > overflow_count)
-//     cnt = 0;
-//   else
-//     cnt = overflow_count+delta;
-//   return cnt * pow(2,16);
-// }
+// mm; max ~65m; *10^4
+uint16_t get_distance_travelled(void) { return total_distance; }
 
-// char check_overflow(void)
-// {
-//   // printf("%u : %u\n", TCNT1, previous_tick);
-//   if (TCNT1 < previous_tick)
-//   {
-//     if (!overflowed)
-//     {
-//       overflow_count++;
-//       overflowed++;
-//       return 1;
-//     }
-//   }
-//   else
-//   {
-//     if (overflowed)
-//     {
-//       overflowed = 0;
-//     }
-//   }
-//   previous_tick = TCNT1;
-//   return 0;
-// }
+// hundreth of a sec; max 11 minutes
+uint16_t get_total_time(void) { return total_time; }
+
+unsigned char toggle_recording(void) {
+  recording = !recording;
+  return recording;
+}
+
+unsigned char start_recording(void) {
+  recording = 1;
+  return recording;
+}
+
+unsigned char stop_recording(void) {
+  recording = 0;
+  return recording;
+}
+
+uint16_t get_current_velocity(void) {
+  uint16_t ticks = get_delta_ticks();
+
+  if (!ticks || ticks < MIN_VALID_TICKS)
+    return 0;
+
+  return (uint16_t)((DELTA_S_MM * TIMING_CONSTANT) / ticks);
+}
+
+uint16_t get_average_velocity(void) { return (uint16_t)(vel_sum / vel_count); }
+
+void add_to_moving_average(uint16_t new_val) {
+  // if the velocity array is full, remove the oldest value from the sum
+  if (vel_count == MAX_VEL_WIN_SIZE) {
+    vel_sum -= velocities[vel_index];
+  } else {
+    vel_count++;
+  }
+
+  // replace oldest value with new value
+  velocities[vel_index] = new_val;
+  vel_sum += new_val;
+
+  // make sure that vel_index is less than MAX_VEL_WIN_SIZE
+  vel_index = (vel_index + 1) % MAX_VEL_WIN_SIZE;
+}
