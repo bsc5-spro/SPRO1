@@ -13,10 +13,10 @@
 // same shaft, meaning that they have the same angular velocity.
 //
 // ds = theta*(pi/180)*r
-// theta = 20
+// theta = 18
 // r = 20mm (radius of wheel)
 #define DELTA_S_MM 0.00174532925
-#define MAX_VEL_WIN_SIZE 20
+#define MAX_VEL_WIN_SIZE 10
 #define MIN_VALID_TICKS 100
 #define TIMING_CONSTANT 15625UL
 
@@ -53,15 +53,25 @@ void opto_init(void) {
   zero_distance();
 }
 
+static char vel_invalid = 0;
 void monitor_encoder(void) {
   if (recording) {
     uint16_t temp = TCNT1;
-    uint16_t dt = temp - previous_tick;
+    uint16_t dt = previous_tick - temp;
     previous_tick = temp;
 
-    // somehow calcualte the time passed and add it to the running total
+    if (dt >= 625) {
+      total_time += 4;
+    }
+
     uint16_t vel = get_current_velocity();
-    add_to_moving_average(vel);
+    if (vel == 0 && !vel_invalid) { // only add 0 velocity if previous was not
+                                    // zero
+      vel_invalid = 1;
+    } else {
+      add_to_moving_average(vel);
+      vel_invalid = 0;
+    }
   }
 }
 
@@ -92,10 +102,21 @@ void zero_time() {
 // mm; max ~65m; *10^4
 uint16_t get_distance_travelled(void) { return total_distance; }
 
-uint16_t get_total_time(void) {}
+// hundreth of a sec; max 11 minutes
+uint16_t get_total_time(void) { return total_time; }
 
 unsigned char toggle_recording(void) {
   recording = !recording;
+  return recording;
+}
+
+unsigned char start_recording(void) {
+  recording = 1;
+  return recording;
+}
+
+unsigned char stop_recording(void) {
+  recording = 0;
   return recording;
 }
 
@@ -118,7 +139,7 @@ void add_to_moving_average(uint16_t new_val) {
     vel_count++;
   }
 
-  // replace odest value with new value
+  // replace oldest value with new value
   velocities[vel_index] = new_val;
   vel_sum += new_val;
 

@@ -9,6 +9,8 @@ void opto_init(void);
 uint16_t get_delta_ticks(void);
 
 unsigned char toggle_recording(void);
+unsigned char start_recording(void);
+unsigned char stop_recording(void);
 
 void zero_distance(void);
 void zero_time(void);
