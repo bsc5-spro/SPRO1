@@ -79,10 +79,12 @@ int main(void) {
     if (loopCount % 6 == 0) {
       // check if velocity stabilized
       if (abs(velocityDeviation) < vError) {
-        uint16_t distanceRemaining = targetDistance - get_distance_travelled();
-        uint16_t timeRemaining = targetTime - get_total_time();
+        uint16_t distanceRemaining =
+            targetDistance - get_distance_travelled();          // mm
+        uint16_t timeRemaining = targetTime - get_total_time(); // 1/100 s
+        timeRemaining /= 100; // convert from 1/100 s to s
 
-        uint16_t requiredVelocity = distanceRemaining / timeRemaining;
+        uint16_t requiredVelocity = distanceRemaining / timeRemaining; // mm/s
 
         int deltaV = requiredVelocity - get_average_velocity();
 
