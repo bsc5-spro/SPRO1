@@ -14,8 +14,8 @@
 //
 // ds = theta*(pi/180)*r
 // theta = 18
-// r = 20mm (radius of wheel)
-#define DELTA_S_MM 0.00174532925
+// r = 31.3mm (radius of wheel)
+#define DELTA_S_MM 9.833185
 #define MAX_VEL_WIN_SIZE 10
 #define MIN_VALID_TICKS 100
 #define TIMING_CONSTANT 15625UL
@@ -85,7 +85,6 @@ uint16_t get_delta_ticks(void) {
     if (delta_tick > MIN_VALID_TICKS) {
       previous_edge = current_edge;
       // block_count++;
-      total_distance += DELTA_S_MM;
       return delta_tick;
     }
   }
