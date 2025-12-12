@@ -20,20 +20,6 @@ void init_display(void){
 	readValue = 0;
 }
 
-int distance = 0;
-int time = 0;
-void run(){
-    printf("page 2%c%c%c",255,255,255);
-    _delay_ms(20);
-}
-int run_1(int distance, int time){
-    if (distance==0 || time==0)
-    {
-    return 0;
-    }
-return 1;
-}
-
 int get_value(char component[]){
     printf("get %s.val%c%c%c", component, 255, 255, 255);
     return read_value();
@@ -108,9 +94,9 @@ int read_value(void){
         if(readBuffer[0] == 0x11 && readBuffer[2] == -1 && readBuffer[3] == -1 && readBuffer[4] == -1)//This is a complete number return
         {
             readValue = readBuffer[1] ;
-            if (readValue == 1){
+            if (readValue == 1){ // start button
                 return 0;
-            } else if (readValue == 2){
+            } else if (readValue == 2){ // back button
                 return -1;
             }
         }
