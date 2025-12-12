@@ -167,7 +167,16 @@ fixed read_numpad(void) {
   return number;
 }
 
-void update_run_screen(uint16_t rundistance, uint16_t runtime, uint16_t runvelocity) {
+void update_run_screen(uint16_t distance, uint16_t time, uint16_t velocity) {
   // update the each component on the screen
   // (in proper units)
+
+  set_property("rundistance", "val", distance);
+  set_property("rundistance", "vvs1", 1);
+
+  set_property("runtime", "val", time);
+  set_property("runtime", "vvs1", 2);
+
+  set_property("runvelocity", "val", velocity);
+  set_property("runvelocity", "vvs1", 1);
 }
