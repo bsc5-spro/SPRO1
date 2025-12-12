@@ -22,17 +22,6 @@ void init_display(void) {
   readValue = 0;
 }
 
-int distance = 0;
-int time = 0;
-void run() { set_page(2); }
-
-int run_1(int distance, int time) {
-  if (distance == 0 || time == 0) {
-    return 0;
-  }
-  return 1;
-}
-
 int get_value(char component[]) {
   printf("get %s.val%c%c%c", component, 255, 255, 255);
   return read_value();
@@ -178,7 +167,7 @@ fixed read_numpad(void) {
   return number;
 }
 
-void update_run_screen(uint16_t distance, uint16_t time, uint16_t velocity) {
+void update_run_screen(uint16_t rundistance, uint16_t runtime, uint16_t runvelocity) {
   // update the each component on the screen
   // (in proper units)
 }

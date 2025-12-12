@@ -21,6 +21,6 @@ int read_value(void);
 
 fixed read_numpad(void);
 
-void update_run_screen(uint16_t distance, uint16_t time, uint16_t velocity);
+void update_run_screen(uint16_t rundistance, uint16_t runtime, uint16_t runvelocity);
 
 #endif
