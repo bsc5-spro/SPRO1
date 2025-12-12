@@ -1,7 +1,8 @@
 #ifndef NEXTION
 #define NEXTION
 
-#include <stdint.h>
+#include <stdint.h> // for uint16_t
+
 typedef struct {
   int i_number;
   int decimalPlace;
@@ -9,7 +10,6 @@ typedef struct {
 } fixed;
 
 void init_display(void);
-// void set_speed_display(float speed);
 
 void set_value(char component[], int val);
 void set_property(char component[], char property[], int val);
@@ -21,6 +21,7 @@ int read_value(void);
 
 fixed read_numpad(void);
 
-void update_run_screen(uint16_t rundistance, uint16_t runtime, uint16_t runvelocity);
+void update_run_screen(uint16_t rundistance, uint16_t runtime,
+                       uint16_t runvelocity);
 
 #endif

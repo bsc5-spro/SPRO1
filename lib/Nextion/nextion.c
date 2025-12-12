@@ -27,10 +27,6 @@ int get_value(char component[]) {
   return read_value();
 }
 
-void set_value(char component[], int val) {
-  printf("%s.val=%d%c%c%c", component, val, 255, 255, 255);
-}
-
 void set_property(char component[], char property[], int val) {
   printf("%s.%s=%d%c%c%c", component, property, val, 255, 255, 255);
 }
@@ -101,9 +97,9 @@ int read_value(void) {
         readBuffer[4] == -1) // This is a complete number return
     {
       readValue = readBuffer[1];
-      if (readValue == 1) {
+      if (readValue == 1) { // start button
         return 0;
-      } else if (readValue == 2) {
+      } else if (readValue == 2) { // back button
         return -1;
       }
     }
