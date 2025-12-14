@@ -4,8 +4,8 @@
 #include <stdint.h> // for uint16_t
 
 typedef struct {
-  int i_number;
-  int decimalPlace;
+  uint16_t i_number;
+  uint16_t decimalPlace;
   float f_number;
 } fixed;
 

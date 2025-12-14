@@ -4,7 +4,6 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <usart.h>
 #include <util/delay.h>
 
@@ -99,7 +98,7 @@ char read_value(void) {
   case 0x1A:
     for (int j = 0; j < 3; j++) {
       while (!uart_read_byte(&byte))
-        ;
+        ; // clear out tail
     }
     break;
   default:
@@ -219,10 +218,10 @@ void update_run_screen(uint16_t distance, uint16_t time, uint16_t velocity) {
   // (in proper units)
 
   set_property("rundistance", "val", distance);
-  set_property("rundistance", "vvs1", 1);
+  set_property("rundistance", "vvs1", 1); // mm -> cm
 
   set_property("runtime", "val", time);
-  set_property("runtime", "vvs1", 2);
+  set_property("runtime", "vvs1", 2); // 1/100 s -> s
 
   set_property("runvelocity", "val", velocity);
   set_property("runvelocity", "vvs1", 1);

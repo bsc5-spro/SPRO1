@@ -1,6 +1,5 @@
 #include <avr/io.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <util/delay.h>
 
@@ -9,7 +8,7 @@
 #include <opto.h>
 
 static uint16_t targetDistance; // in mm
-static uint16_t targetTime;     // in tenth of a sec
+static uint16_t targetTime;     // in hundredth of a sec
 
 static uint16_t vError;
 
@@ -25,8 +24,8 @@ int main(void) {
   // SETUP //
 
   opto_init();
-  reset_run();
 
+  _delay_ms(4000);
   init_display();
   _delay_ms(200);
   clear_buffer();
@@ -52,6 +51,7 @@ int main(void) {
   // echo_serial();
 
   while (1) {
+    reset_run();
     update_main_page(distance, time);
 
     char runSelected = 0;
@@ -62,13 +62,13 @@ int main(void) {
       case 0x1: {
         // printf("01%c%c%c", 255, 255, 255);
         distance = read_numpad();
-        targetDistance = (uint16_t)(distance.f_number * 10);
+        targetDistance = (uint16_t)(distance.f_number * 10); // cm -> mm
         update_main_page(distance, time);
         break;
       }
       case 0x2: {
         time = read_numpad();
-        targetTime = (uint16_t)(time.f_number * 10);
+        targetTime = (uint16_t)(time.f_number * 100); // s -> 1/100 s
         update_main_page(distance, time);
         break;
       }
@@ -103,7 +103,7 @@ int main(void) {
     // TODO: change according to tests for average run
     pwm1_set_duty(currentPWM); // initial acceleration
 
-    int velocityDeviation = get_average_velocity() - get_current_velocity();
+    int velocityDeviation;
 
     uint8_t loopCount = 0;
 
@@ -121,6 +121,7 @@ int main(void) {
 
       if (loopCount % 6 == 0) {
         // check if velocity stabilized
+        velocityDeviation = get_average_velocity() - get_current_velocity();
         if (abs(velocityDeviation) < vError) {
           uint16_t distanceRemaining =
               targetDistance - get_distance_travelled();          // mm
@@ -169,8 +170,8 @@ int main(void) {
 }
 
 void reset_run(void) {
-  targetDistance = 0;
-  targetTime = 0;
+  // targetDistance = 0;
+  // targetTime = 0;
 
   zero_distance();
   zero_time();
