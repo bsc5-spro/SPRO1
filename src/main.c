@@ -31,6 +31,8 @@ int main(void) {
   _delay_ms(200);
   clear_buffer();
 
+  pwm1_init();
+
   fixed distance, time;
 
   distance.f_number = 400.0;
