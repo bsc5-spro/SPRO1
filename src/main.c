@@ -28,27 +28,44 @@ int main(void) {
   reset_run();
 
   init_display();
+  _delay_ms(200);
+  clear_buffer();
+
+  fixed distance, time;
+
+  distance.f_number = 400.0;
+  distance.i_number = 400;
+  distance.decimalPlace = 0;
+
+  time.f_number = 50.5;
+  time.i_number = 505;
+  time.decimalPlace = 1;
+
+  update_main_page(distance, time);
+
+  // echo_serial();
 
   while (1) {
     char runSelected = 0;
     while (!runSelected) {
-      int action = read_value();
+      clear_buffer();
+      char action = read_value();
+      // printf("%c%c%c%c", action, 255, 255, 255);
       switch (action) {
-      case 1: {
-        fixed number = read_numpad();
-        targetDistance = (uint16_t)(number.f_number * 10);
-        set_value("distance", number.i_number);
-        set_property("distance", "vvs1", number.decimalPlace);
+      case 0x1: {
+        // printf("01%c%c%c", 255, 255, 255);
+        distance = read_numpad();
+        targetDistance = (uint16_t)(distance.f_number * 10);
+        update_main_page(distance, time);
         break;
       }
-      case 2: {
-        fixed number = read_numpad();
-        targetTime = (uint16_t)(number.f_number * 10);
-        set_value("time", number.i_number);
-        set_property("time", "vvs1", number.decimalPlace);
+      case 0x2: {
+        time = read_numpad();
+        targetTime = (uint16_t)(time.f_number * 10);
+        update_main_page(distance, time);
         break;
       }
-      case 0:
+      case 0x0:
         // only continue on if both dist and time are nonzero
         if (targetDistance != 0 && targetTime != 0) {
           runSelected = 1;
@@ -59,7 +76,17 @@ int main(void) {
       default:
         break;
       }
+      _delay_ms(250);
     }
+
+    // int fake_distance = 0;
+    // int fake_time = 0;
+    // while (1) {
+    //   update_run_screen(fake_distance, fake_time, 9000);
+    //   fake_distance += 5;
+    //   fake_time += 1;
+    //   _delay_ms(500);
+    // }
 
     // CONTROL //
 
