@@ -9,15 +9,22 @@
 
 #define NUMBER_STRING 1001
 #define SET 2001
+#define SET_SCREEN 2002
 #define CONTROL 3001
 
-uint32_t readValue;
+static char readValue;
 
-int read_value(void);
+// int read_value(void);
+
+void clear_buffer(void) {
+  while (UCSR0A & (1 << RXC0)) {
+    (void)UDR0;
+  }
+}
 
 void init_display(void) {
-  uart_init(); // open the communication to the microcontroller
-  // io_redirect(); // redirect input and output to the communication
+  uart_init();   // open the communication to the microcontroller
+  io_redirect(); // redirect input and output to the communication
   set_page(0);
   readValue = 0;
 }
@@ -25,6 +32,10 @@ void init_display(void) {
 int get_value(char component[]) {
   printf("get %s.val%c%c%c", component, 255, 255, 255);
   return read_value();
+}
+
+void set_value(char component[], int val) {
+  printf("%s.val=%d%c%c%c", component, val, 255, 255, 255);
 }
 
 void set_property(char component[], char property[], int val) {
@@ -36,7 +47,14 @@ void set_page(int index) {
   _delay_ms(20);
 }
 
-int read_value(void) {
+void echo_serial(void) {
+  char input;
+  while (1) {
+    scanf("%c", &input);
+    printf("%c", input);
+  }
+}
+char read_value(void) {
   char readBuffer[100];
   int typeExpected = 0;
   readValue = 0;
@@ -56,6 +74,10 @@ int read_value(void) {
       typeExpected = SET;
       readBuffer[0] = 0x33;
       break;
+    case 0x32:
+      typeExpected = SET_SCREEN;
+      readBuffer[0] = 0x32;
+      break;
     case 0x1A:
       scanf("%c", &readBuffer[i]);
       scanf("%c", &readBuffer[i]);
@@ -63,6 +85,9 @@ int read_value(void) {
       continue;
       break;
     default:
+      break;
+    }
+    if (typeExpected != 0) {
       break;
     }
   }
@@ -81,7 +106,7 @@ int read_value(void) {
     break;
   case SET:
     for (int i = 1; i < 5; i++) {
-      scanf("%d", &readBuffer[i]);
+      scanf("%c", &readBuffer[i]);
     }
     if (readBuffer[0] == 0x33 && readBuffer[2] == -1 && readBuffer[3] == -1 &&
         readBuffer[4] == -1) // This is a complete number return
@@ -89,9 +114,19 @@ int read_value(void) {
       readValue = readBuffer[1];
     }
     break;
+  case SET_SCREEN:
+    for (int i = 1; i < 5; i++) {
+      scanf("%c", &readBuffer[i]);
+    }
+    if (readBuffer[0] == 0x32 && readBuffer[2] == -1 && readBuffer[3] == -1 &&
+        readBuffer[4] == -1) // This is a complete number return
+    {
+      readValue = readBuffer[1];
+    }
+    break;
   case CONTROL:
     for (int i = 1; i < 5; i++) {
-      scanf("%d", &readBuffer[i]);
+      scanf("%c", &readBuffer[i]);
     }
     if (readBuffer[0] == 0x11 && readBuffer[2] == -1 && readBuffer[3] == -1 &&
         readBuffer[4] == -1) // This is a complete number return
@@ -100,7 +135,7 @@ int read_value(void) {
       if (readValue == 1) { // start button
         return 0;
       } else if (readValue == 2) { // back button
-        return -1;
+        return 0xb;
       }
     }
     break;
@@ -113,24 +148,28 @@ int read_value(void) {
 }
 
 fixed read_numpad(void) {
-  fixed number;
   int numberBuffer[20];
   int index = 0;
+
+  fixed number;
+  number.i_number = 0;
+  number.f_number = 0;
   number.decimalPlace = 0; // place of decimal point from the right
+
   char receivingNumbers = 1;
 
   while (receivingNumbers) {
 
-    int action = read_value();
+    char action = read_value();
     switch (action) {
-    case 11:
+    case 0x11:
       numberBuffer[index] = -1;
       index++;
       break;
-    case 12:
+    case 0x12:
       index--;
       break;
-    case -1:
+    case 0xb:
       receivingNumbers = 0;
       break;
     default:
@@ -151,6 +190,7 @@ fixed read_numpad(void) {
         count++;
       }
     }
+
     set_value("inpnum", number.i_number);
     set_property("inpnum", "vvs1", number.decimalPlace);
   }
@@ -175,4 +215,11 @@ void update_run_screen(uint16_t distance, uint16_t time, uint16_t velocity) {
 
   set_property("runvelocity", "val", velocity);
   set_property("runvelocity", "vvs1", 1);
+}
+
+void update_main_page(fixed distance, fixed time) {
+  set_value("distance", distance.i_number);
+  set_property("distance", "vvs1", distance.decimalPlace);
+  set_value("time", time.i_number);
+  set_property("time", "vvs1", time.decimalPlace);
 }
