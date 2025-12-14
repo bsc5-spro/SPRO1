@@ -1,4 +1,5 @@
 #include "nextion.h"
+#include <avr/interrupt.h>
 #include <avr/io.h>
 #include <math.h>
 #include <stdint.h>
@@ -12,9 +13,19 @@
 #define SET_SCREEN 2002
 #define CONTROL 3001
 
+#define PACKET_LEN 5
+#define RX_BUFFER_SIZE 32
+
+volatile uint8_t rx_buffer[RX_BUFFER_SIZE];
+volatile uint8_t rx_head = 0;
+volatile uint8_t rx_tail = 0;
+
 static char readValue;
+volatile uint8_t control_packet_flag = 0;
 
 // int read_value(void);
+
+int uart_read_byte(uint8_t *byte);
 
 void clear_buffer(void) {
   while (UCSR0A & (1 << RXC0)) {
@@ -23,7 +34,10 @@ void clear_buffer(void) {
 }
 
 void init_display(void) {
-  uart_init();   // open the communication to the microcontroller
+  uart_init(); // open the communication to the microcontroller
+  UCSR0B = (1 << RXEN0) | (1 << TXEN0) | (1 << RXCIE0);
+  UCSR0C = (1 << UCSZ01) | (1 << UCSZ00); // 8N1
+  sei();
   io_redirect(); // redirect input and output to the communication
   set_page(0);
   readValue = 0;
@@ -48,55 +62,59 @@ void set_page(int index) {
 }
 
 void echo_serial(void) {
-  char input;
+  // char input;
   while (1) {
-    scanf("%c", &input);
-    printf("%c", input);
+    if (!(UCSR0A & (1 << RXC0))) {
+      continue;
+    }
+    // scanf("%c", &input);
+    printf("%c", UDR0);
   }
 }
 char read_value(void) {
-  char readBuffer[100];
+  char readBuffer[20];
   int typeExpected = 0;
   readValue = 0;
-  for (int i = 0; i < 8; i++) {
-    scanf("%c", &readBuffer[i]);
-    switch (readBuffer[i]) {
-    case 0x71:
-      typeExpected = NUMBER_STRING;
-      readBuffer[0] =
-          0x71; // Move indicator to front, just to keep the nice format
-      break;
-    case 0x11:
-      typeExpected = CONTROL;
-      readBuffer[0] = 0x11;
-      break;
-    case 0x33:
-      typeExpected = SET;
-      readBuffer[0] = 0x33;
-      break;
-    case 0x32:
-      typeExpected = SET_SCREEN;
-      readBuffer[0] = 0x32;
-      break;
-    case 0x1A:
-      scanf("%c", &readBuffer[i]);
-      scanf("%c", &readBuffer[i]);
-      scanf("%c", &readBuffer[i]);
-      continue;
-      break;
-    default:
-      break;
+
+  uint8_t byte;
+  while (!uart_read_byte(&byte)) {
+    ; // wait for incoming byte
+  }
+
+  readBuffer[0] = byte;
+
+  switch (byte) {
+  case 0x71:
+    typeExpected = NUMBER_STRING;
+    break;
+  case 0x11:
+    typeExpected = CONTROL;
+    break;
+  case 0x33:
+    typeExpected = SET;
+    break;
+  case 0x32:
+    typeExpected = SET_SCREEN;
+    break;
+  case 0x1A:
+    for (int j = 0; j < 3; j++) {
+      while (!uart_read_byte(&byte))
+        ;
     }
-    if (typeExpected != 0) {
-      break;
-    }
+    break;
+  default:
+    break;
+  }
+
+  int packetLength = (typeExpected == NUMBER_STRING) ? 8 : 5;
+  for (int i = 1; i < packetLength; i++) {
+    while (!uart_read_byte(&byte))
+      ;
+    readBuffer[i] = byte;
   }
 
   switch (typeExpected) {
   case NUMBER_STRING:
-    for (int i = 1; i < 8; i++) {
-      scanf("%c", &readBuffer[i]);
-    }
     if (readBuffer[0] == 0x71 && readBuffer[5] == -1 && readBuffer[6] == -1 &&
         readBuffer[7] == -1) // This is a complete number return
     {
@@ -105,9 +123,6 @@ char read_value(void) {
     }
     break;
   case SET:
-    for (int i = 1; i < 5; i++) {
-      scanf("%c", &readBuffer[i]);
-    }
     if (readBuffer[0] == 0x33 && readBuffer[2] == -1 && readBuffer[3] == -1 &&
         readBuffer[4] == -1) // This is a complete number return
     {
@@ -115,9 +130,6 @@ char read_value(void) {
     }
     break;
   case SET_SCREEN:
-    for (int i = 1; i < 5; i++) {
-      scanf("%c", &readBuffer[i]);
-    }
     if (readBuffer[0] == 0x32 && readBuffer[2] == -1 && readBuffer[3] == -1 &&
         readBuffer[4] == -1) // This is a complete number return
     {
@@ -125,17 +137,16 @@ char read_value(void) {
     }
     break;
   case CONTROL:
-    for (int i = 1; i < 5; i++) {
-      scanf("%c", &readBuffer[i]);
-    }
     if (readBuffer[0] == 0x11 && readBuffer[2] == -1 && readBuffer[3] == -1 &&
         readBuffer[4] == -1) // This is a complete number return
     {
       readValue = readBuffer[1];
       if (readValue == 1) { // start button
-        return 0;
+        return 0xa;
       } else if (readValue == 2) { // back button
         return 0xb;
+      } else if (readValue == 0x00) {
+        return 0xc;
       }
     }
     break;
@@ -222,4 +233,46 @@ void update_main_page(fixed distance, fixed time) {
   set_property("distance", "vvs1", distance.decimalPlace);
   set_value("time", time.i_number);
   set_property("time", "vvs1", time.decimalPlace);
+}
+
+// From ChatGPT
+int check_run_end(void) {
+  if (control_packet_flag) {
+    control_packet_flag = 0;
+    return 1;
+  }
+  return 0;
+}
+
+ISR(USART_RX_vect) {
+  uint8_t next = (rx_head + 1) % RX_BUFFER_SIZE;
+  uint8_t byte = UDR0; // Read the byte immediately
+
+  if (next != rx_tail) { // prevent overflow
+    rx_buffer[rx_head] = byte;
+    rx_head = next;
+  }
+
+  static const uint8_t expected[PACKET_LEN] = {0x11, 0x00, 0xFF, 0xFF, 0xFF};
+  static uint8_t idx = 0;
+
+  if (byte == expected[idx]) {
+    idx++;
+    if (idx == PACKET_LEN) {
+      control_packet_flag = 1;
+      idx = 0;
+    }
+  } else {
+    idx = (byte == expected[0]) ? 1 : 0;
+  }
+}
+
+int uart_read_byte(uint8_t *byte) {
+  if (rx_tail == rx_head) {
+    return 0; // no data available
+  }
+
+  *byte = rx_buffer[rx_tail];
+  rx_tail = (rx_tail + 1) % RX_BUFFER_SIZE;
+  return 1; // byte returned
 }

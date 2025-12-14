@@ -30,4 +30,6 @@ void update_run_screen(uint16_t rundistance, uint16_t runtime,
 
 void update_main_page(fixed distance, fixed time);
 
+int check_run_end(void);
+
 #endif
