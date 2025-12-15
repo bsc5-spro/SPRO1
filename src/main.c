@@ -31,9 +31,6 @@ int main(void) {
   clear_buffer();
 
   pwm1_init();
-  pwm1_set_duty(50);
-  _delay_ms(1000);
-  pwm1_set_duty(0);
 
   fixed distance, time;
 
@@ -107,12 +104,7 @@ int main(void) {
 
     uint8_t loopCount = 0;
 
-    while (1
-           //
-           // (get_distance_travelled() < targetDistance)
-           // &&
-           //
-    ) {
+    while (get_distance_travelled() < targetDistance) {
       if (check_run_end()) {
         break;
       }

@@ -133,6 +133,7 @@ unsigned char stop_recording(void) {
   return recording;
 }
 
+// mm / s
 uint16_t get_current_velocity(void) {
   uint16_t ticks = get_delta_ticks();
 
