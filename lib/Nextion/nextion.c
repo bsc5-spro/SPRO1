@@ -144,7 +144,7 @@ char read_value(void) {
         return 0xa;
       } else if (readValue == 2) { // back button
         return 0xb;
-      } else if (readValue == 0x00) {
+      } else if (readValue == 0x00) { // restart button
         return 0xc;
       }
     }
