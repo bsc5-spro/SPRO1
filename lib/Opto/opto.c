@@ -1,4 +1,5 @@
 #include "opto.h"
+#include <avr/interrupt.h>
 #include <avr/io.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -13,7 +14,7 @@
 // ds = theta*(pi/180)*r
 // theta = 18
 // r = 31.3mm (radius of wheel)
-#define DELTA_S_MM 9.833185
+#define DELTA_S_MM 19.5721
 #define MAX_VEL_WIN_SIZE 10
 #define MIN_VALID_TICKS 100
 #define TIMING_CONSTANT 15625UL
@@ -35,16 +36,23 @@ static uint16_t total_time = 0;
 
 static unsigned char recording;
 
+volatile uint16_t last_capture = 0;
+volatile uint32_t delta_accumulator = 0;
+volatile uint8_t delta_count = 0;
+
 static void add_to_moving_average(uint16_t new_val);
 
 void opto_init(void) {
   TCCR1A = 0x00; // pure ticks counter
   TCCR1B = 0xC5;
+  TIMSK1 = (1 << ICIE1);
+
+  sei();
 
   DDRB &= ~0x01; // PB0 as input
   PORTB |= 0x01; // pullup on PB0
 
-  previous_edge = ICR1;
+  // previous_edge = ICR1;
 
   delta_tick = 0;
   block_count = 0;
@@ -83,31 +91,31 @@ void monitor_encoder(void) {
     }
   }
 
-  uint16_t vel = get_current_velocity();
-  if (vel == 0 && !vel_invalid) { // only add 0 velocity if previous was not
-                                  // zero
-    vel_invalid = 1;
-  } else {
-    add_to_moving_average(vel);
-    vel_invalid = 0;
+  if (delta_count >= 4) {
+    uint16_t vel = get_current_velocity();
+    if (vel == 0 && !vel_invalid) { // only add 0 velocity if previous was not
+                                    // zero
+      vel_invalid = 1;
+    } else {
+      add_to_moving_average(vel);
+      vel_invalid = 0;
+    }
   }
 }
 
 uint16_t get_delta_ticks(void) {
+  uint16_t avg = 0;
 
-  printf("%c%c%c%c", block_count, 255, 255, 255);
-  if (ICR1 != previous_edge) { // There has been a new
-    // obstruction
-    current_edge = ICR1;
-    delta_tick = current_edge - previous_edge;
-
-    // if (delta_tick > MIN_VALID_TICKS) {
-    previous_edge = current_edge;
-    block_count++;
-    return delta_tick;
-    // }
+  cli();
+  if (delta_count > 0) {
+    avg = delta_accumulator;
+    delta_accumulator = 0;
+    total_distance += DELTA_S_MM * delta_count;
+    delta_count = 0;
   }
-  return 0;
+  sei();
+
+  return avg;
 }
 
 void zero_distance() { total_distance = 0; }
@@ -147,7 +155,7 @@ uint16_t get_current_velocity(void) {
   if (!ticks || ticks < MIN_VALID_TICKS)
     return 0;
 
-  total_distance += DELTA_S_MM * block_count;
+  // total_distance += DELTA_S_MM * block_count;
   block_count = 0;
 
   return (uint16_t)((DELTA_S_MM * TIMING_CONSTANT) / ticks);
@@ -169,4 +177,18 @@ void add_to_moving_average(uint16_t new_val) {
 
   // make sure that vel_index is less than MAX_VEL_WIN_SIZE
   vel_index = (vel_index + 1) % MAX_VEL_WIN_SIZE;
+}
+
+ISR(TIMER1_CAPT_vect) {
+  uint16_t current = ICR1;
+  uint16_t delta = current - last_capture;
+
+  if (delta == 0) {
+    return;
+  }
+
+  last_capture = current;
+
+  delta_accumulator += delta;
+  delta_count++;
 }
