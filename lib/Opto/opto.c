@@ -140,6 +140,8 @@ uint16_t get_current_velocity(void) {
   if (!ticks || ticks < MIN_VALID_TICKS)
     return 0;
 
+  total_distance += DELTA_S_MM;
+
   return (uint16_t)((DELTA_S_MM * TIMING_CONSTANT) / ticks);
 }
 
