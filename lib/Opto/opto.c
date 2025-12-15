@@ -1,6 +1,7 @@
 #include "opto.h"
 #include <avr/io.h>
 #include <stdint.h>
+#include <stdio.h>
 
 // arc distance between two gaps in [m]illi[m]eters
 // assuming no slippage, the distance a point on the wheel travels equals the
@@ -19,6 +20,7 @@
 
 static uint16_t previous_edge, current_edge; //, overflow_count;
 static uint16_t delta_tick;
+static uint16_t block_count;
 
 static uint16_t previous_tick = 0;
 
@@ -39,9 +41,13 @@ void opto_init(void) {
   TCCR1A = 0x00; // pure ticks counter
   TCCR1B = 0xC5;
 
+  DDRB &= ~0x01; // PB0 as input
+  PORTB |= 0x01; // pullup on PB0
+
   previous_edge = ICR1;
 
   delta_tick = 0;
+  block_count = 0;
 
   recording = 0;
   vel_index = 0;
@@ -89,16 +95,17 @@ void monitor_encoder(void) {
 
 uint16_t get_delta_ticks(void) {
 
+  printf("%c%c%c%c", block_count, 255, 255, 255);
   if (ICR1 != previous_edge) { // There has been a new
     // obstruction
     current_edge = ICR1;
     delta_tick = current_edge - previous_edge;
 
-    if (delta_tick > MIN_VALID_TICKS) {
-      previous_edge = current_edge;
-      // block_count++;
-      return delta_tick;
-    }
+    // if (delta_tick > MIN_VALID_TICKS) {
+    previous_edge = current_edge;
+    block_count++;
+    return delta_tick;
+    // }
   }
   return 0;
 }
@@ -140,7 +147,8 @@ uint16_t get_current_velocity(void) {
   if (!ticks || ticks < MIN_VALID_TICKS)
     return 0;
 
-  total_distance += DELTA_S_MM;
+  total_distance += DELTA_S_MM * block_count;
+  block_count = 0;
 
   return (uint16_t)((DELTA_S_MM * TIMING_CONSTANT) / ticks);
 }

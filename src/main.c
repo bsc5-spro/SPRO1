@@ -16,9 +16,6 @@ void reset_run(void);
 
 int main(void) {
 
-  DDRB &= ~0x01; // all pins act as input
-  PORTB |= 0x01; // all pins in pull-down mode
-
   vError = 1;
 
   // SETUP //
