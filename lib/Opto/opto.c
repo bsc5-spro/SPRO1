@@ -2,7 +2,6 @@
 #include <avr/interrupt.h>
 #include <avr/io.h>
 #include <stdint.h>
-#include <stdio.h>
 
 // arc distance between two gaps in [m]illi[m]eters
 // assuming no slippage, the distance a point on the wheel travels equals the
@@ -26,7 +25,7 @@ static uint16_t block_count;
 static uint16_t previous_tick = 0;
 
 static uint8_t vel_index = 0;
-static uint8_t vel_count;
+static uint8_t vel_count = 0;
 static uint16_t vel_sum = 0;
 static uint16_t velocities[MAX_VEL_WIN_SIZE]; // array of measured velocities
 
@@ -139,6 +138,7 @@ unsigned char toggle_recording(void) {
 }
 
 unsigned char start_recording(void) {
+  opto_reset();
   recording = 1;
   return recording;
 }
@@ -191,4 +191,15 @@ ISR(TIMER1_CAPT_vect) {
 
   delta_accumulator += delta;
   delta_count++;
+}
+
+void opto_reset(void) {
+  zero_distance();
+  zero_time();
+  delta_accumulator = 0;
+  delta_count = 0;
+
+  vel_index = 0;
+  vel_count = 0;
+  vel_sum = 0;
 }

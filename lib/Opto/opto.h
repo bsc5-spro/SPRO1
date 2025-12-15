@@ -4,6 +4,7 @@
 
 #include <stdint.h>
 void opto_init(void);
+void opto_reset(void);
 
 // return the number of ticks between two obstructions.
 uint16_t get_delta_ticks(void);

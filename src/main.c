@@ -12,8 +12,6 @@ static uint16_t targetTime;     // in hundredth of a sec
 
 static uint16_t vError;
 
-void reset_run(void);
-
 int main(void) {
 
   vError = 1;
@@ -22,6 +20,7 @@ int main(void) {
 
   opto_init();
 
+  // wait for display to turn on
   _delay_ms(4000);
   init_display();
   _delay_ms(200);
@@ -39,14 +38,14 @@ int main(void) {
   time.i_number = 505;
   time.decimalPlace = 1;
 
-  targetDistance = (uint16_t)(distance.f_number * 10);
-  targetTime = (uint16_t)(time.f_number * 10);
-
   // echo_serial();
 
   while (1) {
-    reset_run();
+    opto_reset();
     update_main_page(distance, time);
+
+    targetDistance = (uint16_t)(distance.f_number * 10);
+    targetTime = (uint16_t)(time.f_number * 100);
 
     char runSelected = 0;
     while (!runSelected) {
@@ -56,13 +55,15 @@ int main(void) {
       case 0x1: {
         // printf("01%c%c%c", 255, 255, 255);
         distance = read_numpad();
-        targetDistance = (uint16_t)(distance.f_number * 10); // cm -> mm
+        targetDistance = (uint16_t)(distance.f_number * 10);
+        targetTime = (uint16_t)(time.f_number * 100);
         update_main_page(distance, time);
         break;
       }
       case 0x2: {
         time = read_numpad();
-        targetTime = (uint16_t)(time.f_number * 100); // s -> 1/100 s
+        targetDistance = (uint16_t)(distance.f_number * 10);
+        targetTime = (uint16_t)(time.f_number * 100);
         update_main_page(distance, time);
         break;
       }
@@ -77,23 +78,15 @@ int main(void) {
       default:
         break;
       }
+
       _delay_ms(250);
     }
-
-    // int fake_distance = 0;
-    // int fake_time = 0;
-    // while (1) {
-    //   update_run_screen(fake_distance, fake_time, 9000);
-    //   fake_distance += 5;
-    //   fake_time += 1;
-    //   _delay_ms(500);
-    // }
 
     // CONTROL //
 
     start_recording();
 
-    char currentPWM = 80;
+    char currentPWM = 60;
     // TODO: change according to tests for average run
     pwm1_set_duty(currentPWM); // initial acceleration
 
@@ -145,23 +138,13 @@ int main(void) {
     pwm1_set_duty(0);
     stop_recording();
     update_run_screen(get_distance_travelled(), get_total_time(), 0);
-    update_run_screen(get_distance_travelled(), get_total_time(), 90);
 
-    char reset = 0;
-    while (!reset) {
-      if (read_value() == 0xc) {
+    while (1) {
+      if (check_run_end()) { // wait for a manual reset
         set_page(0);
-        reset = 1;
+        break;
       }
     }
   }
   return 0;
-}
-
-void reset_run(void) {
-  // targetDistance = 0;
-  // targetTime = 0;
-
-  zero_distance();
-  zero_time();
 }
