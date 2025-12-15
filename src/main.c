@@ -43,6 +43,7 @@ int main(void) {
   while (1) {
     opto_reset();
     update_main_page(distance, time);
+    pwm1_set_duty(0);
 
     targetDistance = (uint16_t)(distance.f_number * 10);
     targetTime = (uint16_t)(time.f_number * 100);
